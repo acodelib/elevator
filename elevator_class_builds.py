@@ -49,7 +49,7 @@ class Elevator(object):
         self.Occupants           = []
         self.OrdersQue           = []  # Destinations of Occupants (Customers that have embarked)
         self.CurrDestination     = 0
-                
+        
         self.Capacity = randint(8,12) # gets a random capacity between 8 and 12
         self.WaitingList = ListOfElevatorCalls
     #---------------------------------------------------------------------------------
@@ -64,10 +64,34 @@ class Elevator(object):
 #===============================================================================================================================================================
 class Building(object):
     def __init__(self,CustomersNo:'int',MaxFloors:'int'):
-        pass     
-if __name__=='__main__' :
+        '''
+          At instantiation time several internal Lists and Dictionaries will be created:
+          - Customers :
+          - ElevatorCalls :
+        '''
+        self.TopFloor      = MaxFloors
+        self.ElevatorCalls = []
+        self.Customers     = []
+
+        # generate customers
+        for Idx in range(0,CustomersNo):
+            LocalCustomer = new Customer(Idx,self.TopFloor)
+            self.Customers.append(LocalCustomer) 
+        # gather requests from all Customers in the building; 
+        for Elem in self.Customers
+            
+            Elem.Direction
+            
+        
+        self.MyElevator = Elevator
+
+def main():
     P = Customer('Charlie',15)
     print(P)
     listOfCalls = list()
     El = Elevator(listOfCalls)
     print(El)
+    
+if __name__=='__main__' :
+    main()
+  
