@@ -1,5 +1,6 @@
 __author__ = 'Andrei'
 from random import *
+from time   import *
 
 #===========================Customer class=====================================================================================================================
 class Customer(object):
@@ -60,25 +61,27 @@ class Elevator(object):
         self.__Printable = 'Elevator with maximum capacity of {} has {} customers embarked and is currently heading towards floor {}'.format(self.Capacity,len(self.Occupants),self.CurrDestination)
         return self.__Printable
     ##---------------------------------------------------------------------------------
-    def embarkNewOccupant(self,NewOccupant:'usually Customer'): #choosed emark as load wouldn't be nice on people
+    def embarkNewOccupant(self,NewOccupant:'usually Customer'): #choosed emabrk as load wouldn't be nice on people
         '''
             Method defining how a customer or any other object can get in the lift
         '''
-        self.__CustomerHandle = self.Building.Customers.pop(str(NewOccupant.Name)) #the customer becomes an occupants and is taken out of the Customers list
-        self.Occupants[self.__CustomerHandle.Name] = self.__CustomerHandle    #customer gets in
-        self.OrdersQueue = self.__CustomerHandle.Destination    # customer pushes panel with where he is going to
+        print('--> Loading customer {}'.format(NewOccupant.Name))
+        self.__CustomerHandle = self.Building.Customers[str(NewOccupant.Name)] #the customer becomes an occupant
+        self.Occupants[self.__CustomerHandle.Name] = self.__CustomerHandle     #customer gets in
+        self.OrdersQueue.append(self.__CustomerHandle.Destination)                   # customer presses panel with where he is going to
     #---------------------------------------------------------------------------------
-    def debarkOccupant(self,Occupant:'usually Customer'):
+    def debarkOccupants(self,DebarkedList:'List'):
         '''
-        Defining how an occupant gets off the elevator:
+        Receives a list of Elevator occupants that have left the elevator at a certain floor
             1.Occupants get written off the occupants list
             2.Their initial destination is erased from OrdersQueue
         '''
-        self.Occupants.pop(Occupant.Name) #customer gets popped out the dictionary and thus from the building, ensuring he will not use the elevator again
-        try:
-            self.OrdersQueue.pop(Occupant.Destination)  #caring for situations where destination was writen off by a previous debarked
-        except KeyError:
-            pass
+        for Deb in DebarkedList:
+            self.Occupants.pop(Deb.Name) #customer gets popped out the dictionary and thus from the building, ensuring he will not use the elevator again
+            try:
+                self.OrdersQueue.remove(Deb.Destination)  #caring for situations where destination was writen off by a previous debarked
+            except KeyError:
+                pass
     #---------------------------------------------------------------------------------
     def movingRouting(self,Destination:'int'):
         '''
@@ -92,6 +95,7 @@ class Elevator(object):
             self.__MovingStep = -1
             self.Direction = 'down'
         for floor in range(self.CurrentFloor,Destination,self.__MovingStep):
+            sleep(1)
             if self.Direction == 'up':
                 self.moveUp()
             else:
@@ -106,27 +110,42 @@ class Elevator(object):
                Customers this become Occupants
             3. They input their desired floor destination (into the OrdersQueue)
         '''
+
         #check if anyone needs to get off
-        for Name,Occ in self.Occupants:
+        GettinOfList = []
+        for Name,Occ in self.Occupants.items():
             if Occ.Destination == FloorNo:
-                self.debarkOccupant(Occ)    #and debark occupant
+                GettinOfList.append(Occ)    #and debark occupant
+                print('---> {} is debarked at floor {}'.format(Name,FloorNo))
+                sleep(1/2)
+        self.debarkOccupants(GettinOfList)
+
         #check if anyone needs to get on:
+        EmbarkingList = [] #used to track who gets in the elevator
         for Name,Cust in self.Building.Customers.items():
             if Cust.Location == FloorNo and Cust.Direction == self.Direction:
                 self.embarkNewOccupant(Cust)
+                EmbarkingList.append(Cust) #keeping track of all customers that get in the elevator so that they can be written off from the customers's list after this operation
+                print('---> {} is embarked at floor {}'.format(Name,FloorNo))
+                sleep(1/2)
+        #updating customers's list after emarking
+        if len(EmbarkingList) != 0:
+            for Cust in EmbarkingList:
+                self.Building.Customers.pop(str(Cust.Name))
     #---------------------------------------------------------------------------------
     def moveUp(self):
         '''
         Implements the 1 floor moving up for the elevator. Have put it in a method to simulate a thing that the elevator can do logic
         '''
         self.CurrentFloor += 1
+        print("Moved up to floor {}".format(str(self.CurrentFloor)))
     #---------------------------------------------------------------------------------
     def moveDown(self):
         '''
         Implements the 1 floor moving down.
         '''
         self.CurrentFloor -= 1
-
+        print("Moved down to floor {}".format(str(self.CurrentFloor)))
 #===============================================================================================================================================================
 
 #===========================BUILDING============================================================================================================================
@@ -169,12 +188,13 @@ class Building(object):
         for Name,Cust in self.Customers.items():
             if self.CallsQueue.count(Cust.Location) == 0:
                 self.CallsQueue.append(Cust.Location)
-        self.CallsQueue.sort() #sorting it so that elevator goest to the nearest call when starting the application (elevator will default as sitting on floor 0)
+        self.CallsQueue.sort() #sorting it so that elevator goes to the nearest call when starting the application (elevator will default as sitting on floor 0)
 
         # create elevator instance with passing list of
         self.MyElevator = Elevator(self)
     def startSimulator(self):
-        self.MyElevator.movingRouting(6)
+        for Call in self.MyElevator.CallsQue:
+            self.MyElevator.movingRouting(Call)
 #=========================================================================================================
 def main():
     bld = Building()
