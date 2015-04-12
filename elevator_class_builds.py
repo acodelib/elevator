@@ -1,6 +1,8 @@
 __author__ = 'Andrei'
+
+
 from random import *
-from time   import *
+from time   import *  # used in simulating real life waiting;
 
 #===========================Customer class=====================================================================================================================
 class Customer(object):
@@ -8,14 +10,17 @@ class Customer(object):
     def __init__(self,SomeName,MaxFloors:'int'):
         '''
         Customer will receive a name at instantiation: This Could be either a number or int (index);
-        MaxFloors will be passed by environment (Building); this is necessary for the customer to choose a destination within building's boundries
+        MaxFloors will be passed by environment (Building); this is necessary for the customer to choose
+              a destination within building's boundaries
         '''
         self.Name        = ''
         self.Destination = 0
         self.Location    = 0
         self.Direction   = ''
         self.Name        = SomeName
-        #check if passed arguments are of valid types -- useful for only when Customer is used outside of a building:
+
+        #check if passed arguments are of valid types -- useful when Customer is used
+        #outside of a building (not the case in this program but in hypothetical case class is reused somewhere else):
         try:
             self.Destination = randint(0,int(MaxFloors)) #Customer decides it's own destination (and not the building for him)
         except ValueError:
@@ -29,6 +34,8 @@ class Customer(object):
             while self.Location == self.Destination:
                 self.Location = randint(0,120)           
             print("Error trapped and solved: Current floor Location of Customer can be only a valid Integer; Random values were assigned for instance (Customer {})".format(self.Name))
+
+        #setting up Direction property
         if self.Location < self.Destination:
             self.Direction = 'up'
         else:
@@ -41,18 +48,20 @@ class Customer(object):
 
 #===========================Elevator class======================================================================================================================
 class Elevator(object):
-    def __init__(self,Building):
+    def __init__(self,Building, Sleep = 'Yes'):
         '''
-         Elevator needs to reside in a building. The current building is passed at instantiation, with Building param
+         Elevator resides in a Building(class) => The current building is passed at instantiation, with Building param
+         Initiation properties are initialised as per internal description
         '''
-        self.Capacity            = 0   # to simulate the Elevetaor's decision making of 'loading' more people or not due to capcity reasons
+        self.Capacity            = 0   # to simulate the Elevataor's decision making of 'loading' more people or not due to capacity reasons
         self.WaitingList         = []
-        self.Occupants           = {}  # Cusomers currently in the lift
+        self.Occupants           = {}  # Customers currently in the lift
         self.OrdersQueue         = []  # Destinations of the Occupants (Customers that have embarked)
         self.CurrDestination     = 0   # when moving, current destination
         self.ElevatorLocation    = 0
         self.CurrentFloor        = 0
         self.Building            = Building
+        self.ImplementSleepOnSimulation = Sleep
         
         self.Capacity = randint(8,12) # gets a random capacity between 8 and 12
         self.CallsQue = self.Building.CallsQueue # a list of Elevator calls from different levels
@@ -63,10 +72,11 @@ class Elevator(object):
     ##---------------------------------------------------------------------------------
     def movingRoutine(self,Destination:'int'):
         '''
-        Method to put the elevator in action
-        Elevator will loop from current floor to destination, the passed param
-        For each level it passes by it executes a floor routine (self.floorRoutine())
+        Method to put the elevator in action:
+         -> Elevator will loop from current floor to destination, the passed param
+         -> For each level it executes a floor routine (self.floorRoutine())
         '''
+
         #first determine if elevator has to move up or down
         if self.CurrentFloor < Destination:
             self.__MovingStep = 1
@@ -74,11 +84,13 @@ class Elevator(object):
         else:
             self.__MovingStep = -1
             self.Direction = 'down'
+
         #second, execute the moving part
         self.CurrDestination = Destination
-        print(self)
+        print(self) #for tracking purposes
         for floor in range(self.CurrentFloor,self.CurrDestination,self.__MovingStep):
-            sleep(1)                        # only to produce the effect of a real elevator moving up the building
+            if self.ImplementSleepOnSimulation.lower() == 'yes':
+                sleep(1)                        # only to produce the effect of a real elevator moving up the building
             if self.Direction == 'up':
                 self.moveUp()
             else:
@@ -89,8 +101,8 @@ class Elevator(object):
          '''
         Implements the logic of stopping at a floor, opening doors so that:
             1. Occupants who where heading for this FloorNo will get off
-            2. If there are customers on that level who are going in the same direction (up/down) they hop on the lift;
-               Customers are included thus in the Occupants collection; (in my approach occupants will be also removed from the Customer's list)
+            2. If there are customers on that level who are going in the same direction (up/down) they hop in the lift;
+               Customers are included thus in the Occupants collection; (in my approach occupants will be also removed from the Customer's list in respect to point 5. of specification )
             3. They input their desired floor destination (into the OrdersQueue)
          '''
          #check if anyone needs to get off
@@ -99,25 +111,24 @@ class Elevator(object):
              if Occ.Destination == FloorNo:
                  GettinOfList.append(Occ)
                  print('---> Customer {} gets off at floor {}'.format(Name,FloorNo))
-                # sleep(1/2)
          self.debarkOccupants(GettinOfList) #and debark occupant 
 
         #check if anyone needs to get on:
          EmbarkingList = [] #used to track who gets in the elevator
          for Name,Cust in self.Building.Customers.items():
-             if Cust.Location == FloorNo and Cust.Direction == self.Direction:
+             if (Cust.Location == FloorNo and Cust.Direction == self.Direction) or (Cust.Location == FloorNo and self.CurrDestination == Cust.Location):
                  self.embarkNewOccupant(Cust)
                  EmbarkingList.append(Cust) #keeping track of all customers that get in the elevator so that they can be written off from the customer's list after this operation
-                 print('---> Customer {} gets in at floor {}'.format(Name,FloorNo))
-               #  sleep(1/2)  # again to give the impression of a real elevator moving
+                 print('---> Customer {} gets in  at floor {}'.format(Name,FloorNo))
+
          #updating customers's list after embarking (writing them off)
          if len(EmbarkingList) != 0:
              for Cust in EmbarkingList:
                  self.Building.Customers.pop(str(Cust.Name))
     #---------------------------------------------------------------------------------
-    def embarkNewOccupant(self,NewOccupant:'usually Customer'): #choosed embark as load wouldn't be nice on people
+    def embarkNewOccupant(self,NewOccupant:'usually Customer'): # ~choosed embark as load wouldn't be nice on people
         '''
-            Method defining how a customer or any other object can get in the lift
+            Method defining how a customer or any other object gets in the lift
         '''       
         self.__CustomerHandle = self.Building.Customers[str(NewOccupant.Name)] #the customer becomes an occupant
         self.Occupants[self.__CustomerHandle.Name] = self.__CustomerHandle     #customer gets in
@@ -131,14 +142,16 @@ class Elevator(object):
         '''
         for Deb in DebarkedList:
             self.Occupants.pop(Deb.Name) #customer gets popped out the dictionary and thus from the building, ensuring he will not use the elevator again
+
+            #caring for situations where destination was writen off by a previous debarked:
             try:
-                self.OrdersQueue.remove(Deb.Destination)  #caring for situations where destination was writen off by a previous debarked
+                self.OrdersQueue.remove(Deb.Destination)
             except KeyError:
                 pass
     #---------------------------------------------------------------------------------
     def moveUp(self):
         '''
-        Implements the 1 floor moving up for the elevator. Have put it in a method to implement a logic real life step
+        Implements the 1 floor moving up for the elevator. ~ Have put it in a method to implement a logic real life step
         '''
         self.CurrentFloor += 1
         print("Moved up to floor {}".format(str(self.CurrentFloor)))
@@ -155,7 +168,7 @@ class Elevator(object):
 class Building(object):
     def __init__(self):
         '''
-          At instantiation time, several internal Lists and Dictionaries will be created:
+          At instantiation time, several internal Lists and Dictionaries will be created, most important:
           - Customers
           - CallsQue
         '''
@@ -163,6 +176,7 @@ class Building(object):
         self.CustomersNo   = 0
         self.CallsQueue    = []  #simulates outstanding calls made by customers for the elevator through each floor's panel
         self.Customers     = {}  #collection of all Customers in the building awaiting to be serviced by the elevator
+
         #get max floor and customers numbers with handling human error:
         while 1==1:
             try:
@@ -191,28 +205,28 @@ class Building(object):
         for Name,Cust in self.Customers.items():
             if self.CallsQueue.count(Cust.Location) == 0:
                 self.CallsQueue.append(Cust.Location)
-        #self.CallsQueue.sort() #sorting it so that elevator goes to the nearest call when starting the application (elevator will default as sitting on floor 0)
 
         # create elevator instance
         self.MyElevator = Elevator(self)
-
     #---------------------------------------------------------------------------------
     def startSimulator(self):
+        print("************ initial status ************************************************************")
+        for Key,Cst in self.Customers.items():
+            print (Cst)
+        print("****************************************************************************************")
+        print("********************* started simulator ************************************************")
         for Call in self.MyElevator.CallsQue:
-            #print(self.MyElevator)
-            self.MyElevator.movingRoutine(Call)            
+            self.MyElevator.movingRoutine(Call)
+        for Occ in self.MyElevator.OrdersQueue:
+            self.MyElevator.movingRoutine(Occ)
+        print("********************** ended simulator  ************************************************")
 #=========================================================================================================
 def main():
     bld = Building()
-    print("************ initial condition *********************************************************")
-    for Key,Cst in bld.Customers.items():
-        print (Cst)
-    print("****************************************************************************************")
-    print("********************* simulator ********************************************************")    
-    bld.startSimulator()
-    
-    pass
 
+    bld.MyElevator.ImplementSleepOnSimulation = 'yes'  # Control how the simulation takes place. Leave to Yes for a (sort of) real life waiting (1 sec/floor) or change to instant simulation
+
+    bld.startSimulator()
 if __name__=='__main__' :
     main()
   
